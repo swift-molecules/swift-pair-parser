@@ -63,7 +63,6 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .enableExperimentalFeature("Lifetimes"),
         .enableUpcomingFeature("InferIsolatedConformances"),
-        .enableExperimentalFeature("MoveOnlyTuples"),
     ]
 
     let package: [SwiftSetting] = []
