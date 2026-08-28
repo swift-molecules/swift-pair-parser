@@ -1,6 +1,7 @@
 import Either
 import Pair
 import Parser
+import Parser_Map
 import Pair_Parser
 import Testing
 
@@ -64,12 +65,62 @@ struct `Pair as Parser` {
         #expect(output.1 == "b")
         #expect(input == "c")
     }
+
+    @Test
+    func `Parser Builder flattens three parser outputs`() throws(any Swift.Error) {
+        var input: Substring = "abcd"
+
+        let output = try threeLiterals().parse(&input)
+
+        #expect(output.0 == "a")
+        #expect(output.1 == "b")
+        #expect(output.2 == "c")
+        #expect(input == "d")
+    }
+
+    @Test
+    func `Parser Builder appends to an accumulated tuple pack`() throws(any Swift.Error) {
+        var input: Substring = "abcde"
+
+        let output = try fourLiterals().parse(&input)
+
+        #expect(output.0 == "a")
+        #expect(output.1 == "b")
+        #expect(output.2 == "c")
+        #expect(output.3 == "d")
+        #expect(input == "e")
+    }
 }
 
 @Parser::Parser.Builder<Substring>
 private func twoLiterals() -> Pair::Pair<Literal, Literal> {
     Literal("a")
     Literal("b")
+}
+
+private typealias ThreeLiterals = Parser::Parser.Map<
+    Pair::Pair<Pair::Pair<Literal, Literal>, Literal>,
+    (Character, Character, Character)
+>
+
+@Parser::Parser.Builder<Substring>
+private func threeLiterals() -> ThreeLiterals {
+    Literal("a")
+    Literal("b")
+    Literal("c")
+}
+
+private typealias FourLiterals = Parser::Parser.Map<
+    Pair::Pair<ThreeLiterals, Literal>,
+    (Character, Character, Character, Character)
+>
+
+@Parser::Parser.Builder<Substring>
+private func fourLiterals() -> FourLiterals {
+    Literal("a")
+    Literal("b")
+    Literal("c")
+    Literal("d")
 }
 
 private enum LiteralError: Error {
