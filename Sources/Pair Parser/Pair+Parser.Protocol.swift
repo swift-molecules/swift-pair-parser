@@ -6,7 +6,9 @@ extension Pair::Pair: @retroactive Parser::Parser.`Protocol`
 where
     First: Parser::Parser.`Protocol`,
     Second: Parser::Parser.`Protocol`,
-    First.Input == Second.Input
+    First.Input == Second.Input,
+    First.Output: Escapable,
+    Second.Output: Escapable
 {
 
     public typealias Input = First.Input

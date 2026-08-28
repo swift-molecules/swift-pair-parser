@@ -36,7 +36,6 @@ let package = Package(
             name: "Pair Parser",
             dependencies: [
                 .product(name: "Parser", package: "swift-parser"),
-                .product(name: "Parser Map", package: "swift-parser"),
                 .product(name: "Pair", package: "swift-pair"),
                 .product(name: "Either", package: "swift-either"),
             ]
@@ -48,7 +47,6 @@ let package = Package(
                 .product(name: "Either", package: "swift-either"),
                 .product(name: "Pair", package: "swift-pair"),
                 .product(name: "Parser", package: "swift-parser"),
-                .product(name: "Parser Map", package: "swift-parser"),
             ],
             path: "Tests/Pair Parser Tests"
         ),
@@ -65,6 +63,7 @@ for target in package.targets where ![.system, .binary, .plugin, .macro].contain
         .enableUpcomingFeature("NonisolatedNonsendingByDefault"),
         .enableExperimentalFeature("Lifetimes"),
         .enableUpcomingFeature("InferIsolatedConformances"),
+        .enableExperimentalFeature("MoveOnlyTuples"),
     ]
 
     let package: [SwiftSetting] = []

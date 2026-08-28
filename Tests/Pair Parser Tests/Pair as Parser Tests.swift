@@ -1,7 +1,6 @@
 import Either
 import Pair
 import Parser
-import Parser_Map
 import Pair_Parser
 import Testing
 
@@ -90,6 +89,19 @@ struct `Pair as Parser` {
         #expect(output.3 == "d")
         #expect(input == "e")
     }
+
+    @Test
+    func `Parser Builder preserves move-only tuple outputs`() throws(any Swift.Error) {
+        var input: Substring = "abcd"
+
+        let output = try threeTokens().parse(&input)
+        let (first, second, third) = output
+
+        #expect(first.value == "a")
+        #expect(second.value == "b")
+        #expect(third.value == "c")
+        #expect(input == "d")
+    }
 }
 
 @Parser::Parser.Builder<Substring>
@@ -98,9 +110,10 @@ private func twoLiterals() -> Pair::Pair<Literal, Literal> {
     Literal("b")
 }
 
-private typealias ThreeLiterals = Parser::Parser.Map<
-    Pair::Pair<Pair::Pair<Literal, Literal>, Literal>,
-    (Character, Character, Character)
+private typealias ThreeLiterals = Parser::Parser.Builder<Substring>.Sequence<
+    Literal,
+    Literal,
+    Literal
 >
 
 @Parser::Parser.Builder<Substring>
@@ -110,9 +123,12 @@ private func threeLiterals() -> ThreeLiterals {
     Literal("c")
 }
 
-private typealias FourLiterals = Parser::Parser.Map<
-    Pair::Pair<ThreeLiterals, Literal>,
-    (Character, Character, Character, Character)
+private typealias FourLiterals = Parser::Parser.Builder<Substring>.Append<
+    ThreeLiterals,
+    Literal,
+    Character,
+    Character,
+    Character
 >
 
 @Parser::Parser.Builder<Substring>
@@ -121,6 +137,38 @@ private func fourLiterals() -> FourLiterals {
     Literal("b")
     Literal("c")
     Literal("d")
+}
+
+private struct Token: ~Copyable {
+    let value: Character
+}
+
+private struct TokenLiteral: Parser::Parser.`Protocol` {
+    typealias Input = Substring
+    typealias Output = Token
+    typealias Failure = LiteralError
+    typealias Body = Never
+
+    let expected: Character
+
+    borrowing func parse(_ input: inout Substring) throws(LiteralError) -> Token {
+        guard input.first == expected else { throw .expected(expected) }
+        input = input.dropFirst()
+        return Token(value: expected)
+    }
+}
+
+private typealias ThreeTokens = Parser::Parser.Builder<Substring>.Sequence<
+    TokenLiteral,
+    TokenLiteral,
+    TokenLiteral
+>
+
+@Parser::Parser.Builder<Substring>
+private func threeTokens() -> ThreeTokens {
+    TokenLiteral(expected: "a")
+    TokenLiteral(expected: "b")
+    TokenLiteral(expected: "c")
 }
 
 private enum LiteralError: Error {
