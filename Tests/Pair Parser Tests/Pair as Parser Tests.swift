@@ -53,6 +53,23 @@ struct `Pair as Parser` {
 
         #expect(input == "xc")
     }
+
+    @Test
+    func `Parser Builder sequences two parsers as a Pair`() throws(any Swift.Error) {
+        var input: Substring = "abc"
+
+        let output = try twoLiterals().parse(&input)
+
+        #expect(output.0 == "a")
+        #expect(output.1 == "b")
+        #expect(input == "c")
+    }
+}
+
+@Parser::Parser.Builder<Substring>
+private func twoLiterals() -> Pair::Pair<Literal, Literal> {
+    Literal("a")
+    Literal("b")
 }
 
 private enum LiteralError: Error {
