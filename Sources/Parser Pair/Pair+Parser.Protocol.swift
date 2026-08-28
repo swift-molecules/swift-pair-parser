@@ -2,7 +2,7 @@ public import Either
 public import Pair
 public import Parser
 
-extension Pair: Parser.`Protocol`
+extension Pair: @retroactive Parser.`Protocol`
 where
     First: Parser.`Protocol`,
     Second: Parser.`Protocol`,
@@ -14,6 +14,8 @@ where
     public typealias Output = (First.Output, Second.Output)
 
     public typealias Failure = Either<First.Failure, Second.Failure>
+
+    public typealias Body = Never
 
     @inlinable
     public borrowing func parse(_ input: inout Input) throws(Failure) -> Output {

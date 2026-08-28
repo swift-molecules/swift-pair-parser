@@ -1,71 +1,79 @@
-import Parser_Pair
+import Either
 import Pair
 import Parser
+import Parser_Pair
 import Testing
 
 @Suite
 struct `Pair as Parser` {
-    @Suite struct `Parity With Take Two` {}
+
+    @Test
+    func `parses sequentially and returns both outputs`() throws(any Swift.Error) {
+        var input: Substring = "abc"
+
+        let output = try Pair(Literal("a"), Literal("b")).parse(&input)
+
+        #expect(output.0 == "a")
+        #expect(output.1 == "b")
+        #expect(input == "c")
+    }
+
+    @Test
+    func `attributes a first-parser failure to the left`() {
+        var input: Substring = "xbc"
+
+        do {
+            _ = try Pair(Literal("a"), Literal("b")).parse(&input)
+            Issue.record("Expected the first parser to fail")
+        } catch {
+            switch error {
+            case .left(.expected(let character)):
+                #expect(character == "a")
+            case .right:
+                Issue.record("Expected a left failure")
+            }
+        }
+    }
+
+    @Test
+    func `attributes a second-parser failure to the right`() {
+        var input: Substring = "axc"
+
+        do {
+            _ = try Pair(Literal("a"), Literal("b")).parse(&input)
+            Issue.record("Expected the second parser to fail")
+        } catch {
+            switch error {
+            case .left:
+                Issue.record("Expected a right failure")
+            case .right(.expected(let character)):
+                #expect(character == "b")
+            }
+        }
+
+        #expect(input == "xc")
+    }
 }
 
-extension `Pair as Parser`.`Parity With Take Two` {
-    @Test
-    func `both succeed: outputs match and input state matches`() throws(any Swift.Error) {
-        var inputA = Parser.Test.Input([0x0A, 0x0B, 0x0C])
-        let takeResult = try Parser.Take.Two(
-            Parser.First.Element<Parser.Test.Input>(),
-            Parser.First.Element<Parser.Test.Input>()
-        ).parse(&inputA)
+private enum LiteralError: Error {
+    case expected(Character)
+}
 
-        var inputB = Parser.Test.Input([0x0A, 0x0B, 0x0C])
-        let pairResult = try Pair(
-            Parser.First.Element<Parser.Test.Input>(),
-            Parser.First.Element<Parser.Test.Input>()
-        ).parse(&inputB)
+private struct Literal: Parser.`Protocol` {
+    typealias Input = Substring
+    typealias Output = Character
+    typealias Failure = LiteralError
+    typealias Body = Never
 
-        #expect(takeResult.0 == pairResult.0)
-        #expect(takeResult.1 == pairResult.1)
-        #expect(takeResult.0 == 0x0A)
-        #expect(takeResult.1 == 0x0B)
-        #expect(inputA.first == inputB.first)
-        #expect(inputA.first == 0x0C)
+    let expected: Character
+
+    init(_ expected: Character) {
+        self.expected = expected
     }
 
-    @Test
-    func `empty input: both throw on first parser`() {
-        var inputA = Parser.Test.Input([])
-        #expect(throws: (any Swift.Error).self) {
-            try Parser.Take.Two(
-                Parser.First.Element<Parser.Test.Input>(),
-                Parser.First.Element<Parser.Test.Input>()
-            ).parse(&inputA)
-        }
-
-        var inputB = Parser.Test.Input([])
-        #expect(throws: (any Swift.Error).self) {
-            try Pair(
-                Parser.First.Element<Parser.Test.Input>(),
-                Parser.First.Element<Parser.Test.Input>()
-            ).parse(&inputB)
-        }
-    }
-
-    @Test
-    func `one-byte input: both throw on second parser`() {
-        var inputA = Parser.Test.Input([0x01])
-        #expect(throws: (any Swift.Error).self) {
-            try Parser.Take.Two(
-                Parser.First.Element<Parser.Test.Input>(),
-                Parser.First.Element<Parser.Test.Input>()
-            ).parse(&inputA)
-        }
-
-        var inputB = Parser.Test.Input([0x01])
-        #expect(throws: (any Swift.Error).self) {
-            try Pair(
-                Parser.First.Element<Parser.Test.Input>(),
-                Parser.First.Element<Parser.Test.Input>()
-            ).parse(&inputB)
-        }
+    borrowing func parse(_ input: inout Substring) throws(LiteralError) -> Character {
+        guard input.first == expected else { throw .expected(expected) }
+        input = input.dropFirst()
+        return expected
     }
 }

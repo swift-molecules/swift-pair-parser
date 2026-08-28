@@ -19,7 +19,7 @@ let package = Package(
     ],
     dependencies: [
         .package(
-            url: "https://github.com/swift-molecules/swift-parser.git",
+            url: "https://github.com/swift-atoms/swift-parser.git",
             branch: "main"
         ),
         .package(
@@ -42,7 +42,12 @@ let package = Package(
         ),
         .testTarget(
             name: "Parser Pair Tests",
-            dependencies: ["Parser Pair"],
+            dependencies: [
+                "Parser Pair",
+                .product(name: "Either", package: "swift-either"),
+                .product(name: "Pair", package: "swift-pair"),
+                .product(name: "Parser", package: "swift-parser"),
+            ],
             path: "Tests/Parser Pair Tests"
         ),
     ],
