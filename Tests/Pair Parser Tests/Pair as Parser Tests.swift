@@ -1,7 +1,7 @@
 import Either
 import Pair
 import Parser
-import Parser_Pair
+import Pair_Parser
 import Testing
 
 @Suite
@@ -11,7 +11,7 @@ struct `Pair as Parser` {
     func `parses sequentially and returns both outputs`() throws(any Swift.Error) {
         var input: Substring = "abc"
 
-        let output = try Pair(Literal("a"), Literal("b")).parse(&input)
+        let output = try Pair::Pair(Literal("a"), Literal("b")).parse(&input)
 
         #expect(output.0 == "a")
         #expect(output.1 == "b")
@@ -23,7 +23,7 @@ struct `Pair as Parser` {
         var input: Substring = "xbc"
 
         do {
-            _ = try Pair(Literal("a"), Literal("b")).parse(&input)
+            _ = try Pair::Pair(Literal("a"), Literal("b")).parse(&input)
             Issue.record("Expected the first parser to fail")
         } catch {
             switch error {
@@ -40,7 +40,7 @@ struct `Pair as Parser` {
         var input: Substring = "axc"
 
         do {
-            _ = try Pair(Literal("a"), Literal("b")).parse(&input)
+            _ = try Pair::Pair(Literal("a"), Literal("b")).parse(&input)
             Issue.record("Expected the second parser to fail")
         } catch {
             switch error {
@@ -59,7 +59,7 @@ private enum LiteralError: Error {
     case expected(Character)
 }
 
-private struct Literal: Parser.`Protocol` {
+private struct Literal: Parser::Parser.`Protocol` {
     typealias Input = Substring
     typealias Output = Character
     typealias Failure = LiteralError

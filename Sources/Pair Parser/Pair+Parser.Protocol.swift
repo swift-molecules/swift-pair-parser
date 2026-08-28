@@ -2,10 +2,10 @@ public import Either
 public import Pair
 public import Parser
 
-extension Pair: @retroactive Parser.`Protocol`
+extension Pair::Pair: @retroactive Parser::Parser.`Protocol`
 where
-    First: Parser.`Protocol`,
-    Second: Parser.`Protocol`,
+    First: Parser::Parser.`Protocol`,
+    Second: Parser::Parser.`Protocol`,
     First.Input == Second.Input
 {
 

@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "swift-parser-pair",
+    name: "swift-pair-parser",
     platforms: [
         .macOS(.v27),
         .iOS(.v27),
@@ -13,8 +13,8 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "Parser Pair",
-            targets: ["Parser Pair"]
+            name: "Pair Parser",
+            targets: ["Pair Parser"]
         ),
     ],
     dependencies: [
@@ -33,7 +33,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Parser Pair",
+            name: "Pair Parser",
             dependencies: [
                 .product(name: "Parser", package: "swift-parser"),
                 .product(name: "Pair", package: "swift-pair"),
@@ -41,14 +41,14 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "Parser Pair Tests",
+            name: "Pair Parser Tests",
             dependencies: [
-                "Parser Pair",
+                .target(name: "Pair Parser"),
                 .product(name: "Either", package: "swift-either"),
                 .product(name: "Pair", package: "swift-pair"),
                 .product(name: "Parser", package: "swift-parser"),
             ],
-            path: "Tests/Parser Pair Tests"
+            path: "Tests/Pair Parser Tests"
         ),
     ],
     swiftLanguageModes: [.v6]
