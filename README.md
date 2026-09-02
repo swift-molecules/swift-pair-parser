@@ -6,6 +6,6 @@ Focused Parser integration for the Pair domain.
 returns both outputs as a nominal `Pair`, and `Pair(a, b).parser()` lifts an
 existing pair.
 
-The builder rules for two value-producing elements live here: their failures
-join as `Either`, or collapse to the shared type when both children throw the
-same error. Longer sequences nest `Pair` to the left.
+Its builder rules are the fallback for value outputs that are not copyable,
+which the atom's tuple-building rules cannot express. Copyable values resolve
+to the atom's `Parser.Append` and never reach these rules.

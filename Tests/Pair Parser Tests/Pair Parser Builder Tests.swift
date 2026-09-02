@@ -2,20 +2,18 @@ import Either
 import Pair
 import Pair_Parser
 import Parser
-import Parser_Map
 import Parser_Skip
-import Parser_Sequence
 import Testing
 
 @Suite
 struct `Pair Parser Builder Tests` {
 
     @Test
-    func `two value elements pair up in order`() throws(any Swift.Error) {
+    func `two noncopyable values pair up in order`() throws(any Swift.Error) {
         var input: Substring = "ab"
-        let output = try TwoLiterals().parse(&input)
-        #expect(output.first == "a")
-        #expect(output.second == "b")
+        let output = try Tokens().parse(&input)
+        #expect(output.first.value == "a")
+        #expect(output.second.value == "b")
         #expect(input.isEmpty)
     }
 
@@ -23,7 +21,7 @@ struct `Pair Parser Builder Tests` {
     func `the first failure is the left branch`() {
         var input: Substring = "xb"
         #expect(throws: Either<Mismatch, Other>.left(.expected("a"))) {
-            try MixedLiterals().parse(&input)
+            _ = try MixedTokens().parse(&input)
         }
     }
 
@@ -31,39 +29,62 @@ struct `Pair Parser Builder Tests` {
     func `the second failure is the right branch`() {
         var input: Substring = "ax"
         #expect(throws: Either<Mismatch, Other>.right(.expected("b"))) {
-            try MixedLiterals().parse(&input)
+            _ = try MixedTokens().parse(&input)
         }
     }
 
     @Test
-    func `equally typed failures collapse through skips and products`() {
-        requireFailure(TwoLiterals(), Mismatch.self)
-        requireFailure(Skipped(), Mismatch.self)
+    func `equally typed failures collapse`() {
+        requireFailure(Tokens(), Mismatch.self)
+        requireFailure(ThreeTokens(), Mismatch.self)
     }
 
     @Test
-    func `values nest to the left`() throws(any Swift.Error) {
+    func `noncopyable values nest to the left`() throws(any Swift.Error) {
         var input: Substring = "abc"
-        let output = try ThreeLiterals().parse(&input)
-        #expect(output.first.first == "a")
-        #expect(output.first.second == "b")
-        #expect(output.second == "c")
+        let output = try ThreeTokens().parse(&input)
+        #expect(output.first.first.value == "a")
+        #expect(output.first.second.value == "b")
+        #expect(output.second.value == "c")
     }
+}
+
+@Suite
+struct `Pair Parser Builder Resolution` {
 
     @Test
-    func `noncopyable outputs pair into a noncopyable Pair`() throws(any Swift.Error) {
+    func `copyable values resolve to the atom's Append`() throws(any Swift.Error) {
+        let node = Parser.Builder<Substring>.buildPartialBlock(accumulated: Literal("a"), next: Literal("b"))
+        requireAppend(node)
         var input: Substring = "ab"
-        let output = try Tokens().parse(&input)
-        #expect(output.first.value == "a")
-        #expect(output.second.value == "b")
+        let output = try node.parse(&input)
+        #expect(output.0 == "a")
+        #expect(output.1 == "b")
     }
 
     @Test
-    func `a sixteen element body destructures through an annotated map`() throws(any Swift.Error) {
-        var input: Substring = ",a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,"
-        let output = try Sixteen().parse(&input)
-        #expect(output == ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p"])
-        #expect(input.isEmpty)
+    func `a noncopyable value resolves to Pair.Parser`() throws(any Swift.Error) {
+        let node = Parser.Builder<Substring>.buildPartialBlock(accumulated: TokenLiteral("a"), next: Literal("b"))
+        requirePair(node)
+        var input: Substring = "ab"
+        let output = try node.parse(&input)
+        #expect(output.first.value == "a")
+        #expect(output.second == "b")
+    }
+}
+
+@Suite
+struct `Pair Parser Nonescapable Input` {
+
+    @Test
+    func `two noncopyable values pair up from a nonescapable cursor`() throws(any Swift.Error) {
+        let bytes: [UInt8] = [3, 4]
+        var cursor = Cursor(bytes.span)
+        let pair = try TwoBytes().parse(&cursor)
+        let end = cursor.index
+        #expect(pair.first.value == 3)
+        #expect(pair.second.value == 4)
+        #expect(end == 2)
     }
 }
 
@@ -72,45 +93,13 @@ private func requireFailure<P: Parser.`Protocol`, Failure: Swift.Error>(
     _: Failure.Type
 ) where P.Input: ~Copyable & ~Escapable, P.Output: ~Copyable & ~Escapable, P.Failure == Failure {}
 
-private struct TwoLiterals: Parser.`Protocol` {
-    typealias Failure = Mismatch
+private func requireAppend<A: Parser.`Protocol`, N: Parser.`Protocol`, F: Swift.Error, each O>(
+    _: borrowing Parser.Append<A, N, F, repeat each O>
+) where A.Input == N.Input, A.Input: ~Copyable & ~Escapable, N.Input: ~Copyable & ~Escapable, A.Output == (repeat each O) {}
 
-    var body: some Parser.`Protocol`<Substring, Pair<Character, Character>, Mismatch> {
-        Literal("a")
-        Literal("b")
-    }
-}
-
-private struct MixedLiterals: Parser.`Protocol` {
-    typealias Failure = Either<Mismatch, Other>
-
-    var body: some Parser.`Protocol`<Substring, Pair<Character, Character>, Either<Mismatch, Other>> {
-        Literal("a")
-        OtherLiteral("b")
-    }
-}
-
-private struct Skipped: Parser.`Protocol` {
-    typealias Failure = Mismatch
-
-    var body: some Parser.`Protocol`<Substring, Pair<Character, Character>, Mismatch> {
-        Ignore("<")
-        Literal("a")
-        Ignore(",")
-        Literal("b")
-        Ignore(">")
-    }
-}
-
-private struct ThreeLiterals: Parser.`Protocol` {
-    typealias Failure = Mismatch
-
-    var body: some Parser.`Protocol`<Substring, Pair<Pair<Character, Character>, Character>, Mismatch> {
-        Literal("a")
-        Literal("b")
-        Literal("c")
-    }
-}
+private func requirePair<A: Parser.`Protocol`, N: Parser.`Protocol`, F: Swift.Error>(
+    _: borrowing Pair<A, N>.Parser<F>
+) where A.Input == N.Input, A.Input: ~Copyable & ~Escapable, N.Input: ~Copyable & ~Escapable, A.Output: ~Copyable & Escapable, N.Output: ~Copyable & Escapable {}
 
 private struct Tokens: Parser.`Protocol` {
     typealias Failure = Mismatch
@@ -121,65 +110,31 @@ private struct Tokens: Parser.`Protocol` {
     }
 }
 
-private struct Sixteen: Parser.`Protocol` {
+private struct MixedTokens: Parser.`Protocol` {
+    typealias Failure = Either<Mismatch, Other>
+
+    var body: some Parser.`Protocol`<Substring, Pair<Token, Token>, Either<Mismatch, Other>> {
+        TokenLiteral("a")
+        OtherTokenLiteral("b")
+    }
+}
+
+private struct ThreeTokens: Parser.`Protocol` {
     typealias Failure = Mismatch
 
-    var body: some Parser.`Protocol`<Substring, [Character], Mismatch> {
-        Parser.Sequence(Substring.self) {
-            Ignore(",")
-            Literal("a")
-            Ignore(",")
-            Literal("b")
-            Ignore(",")
-            Literal("c")
-            Ignore(",")
-            Literal("d")
-            Ignore(",")
-            Literal("e")
-            Ignore(",")
-            Literal("f")
-            Ignore(",")
-            Literal("g")
-            Ignore(",")
-            Literal("h")
-            Ignore(",")
-            Literal("i")
-            Ignore(",")
-            Literal("j")
-            Ignore(",")
-            Literal("k")
-            Ignore(",")
-            Literal("l")
-            Ignore(",")
-            Literal("m")
-            Ignore(",")
-            Literal("n")
-            Ignore(",")
-            Literal("o")
-            Ignore(",")
-            Literal("p")
-            Ignore(",")
-        }
-        .map { p -> [Character] in
-            [
-                p.first.first.first.first.first.first.first.first.first.first.first.first.first.first.first,
-                p.first.first.first.first.first.first.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.first.second,
-                p.first.first.first.first.first.second,
-                p.first.first.first.first.second,
-                p.first.first.first.second,
-                p.first.first.second,
-                p.first.second,
-                p.second,
-            ]
-        }
+    var body: some Parser.`Protocol`<Substring, Pair<Pair<Token, Token>, Token>, Mismatch> {
+        TokenLiteral("a")
+        TokenLiteral("b")
+        TokenLiteral("c")
+    }
+}
+
+private struct TwoBytes: Parser.`Protocol` {
+    typealias Failure = ByteMismatch
+
+    var body: some Parser.`Protocol`<Cursor, Pair<ByteToken, ByteToken>, ByteMismatch> {
+        ByteValue()
+        ByteValue()
     }
 }
 
@@ -195,19 +150,6 @@ private struct Token: ~Copyable {
     let value: Character
 }
 
-private struct Ignore: Parser.`Protocol` {
-    let expected: Character
-
-    init(_ expected: Character) {
-        self.expected = expected
-    }
-
-    borrowing func parse(_ input: inout Substring) throws(Mismatch) {
-        guard input.first == expected else { throw .expected(expected) }
-        input = input.dropFirst()
-    }
-}
-
 private struct Literal: Parser.`Protocol` {
     let expected: Character
 
@@ -216,20 +158,6 @@ private struct Literal: Parser.`Protocol` {
     }
 
     borrowing func parse(_ input: inout Substring) throws(Mismatch) -> Character {
-        guard input.first == expected else { throw .expected(expected) }
-        input = input.dropFirst()
-        return expected
-    }
-}
-
-private struct OtherLiteral: Parser.`Protocol` {
-    let expected: Character
-
-    init(_ expected: Character) {
-        self.expected = expected
-    }
-
-    borrowing func parse(_ input: inout Substring) throws(Other) -> Character {
         guard input.first == expected else { throw .expected(expected) }
         input = input.dropFirst()
         return expected
@@ -250,43 +178,17 @@ private struct TokenLiteral: Parser.`Protocol` {
     }
 }
 
-@Suite
-struct `Pair Parser Builder Ranking` {
+private struct OtherTokenLiteral: Parser.`Protocol` {
+    let expected: Character
 
-    @Test
-    func `a void then value element resolves to Skip.First while the pair rules are in scope`() throws(any Swift.Error) {
-        let node = Parser.Builder<Substring>.buildPartialBlock(accumulated: Ignore("<"), next: Literal("a"))
-        requireSkipFirst(node)
-        var input: Substring = "<a"
-        #expect(try node.parse(&input) == "a")
+    init(_ expected: Character) {
+        self.expected = expected
     }
-}
 
-private func requireSkipFirst<S: Parser.`Protocol`, V: Parser.`Protocol`, F: Swift.Error>(
-    _: borrowing Parser.Skip.First<S, V, F>
-) where S.Input == V.Input, S.Input: ~Copyable & ~Escapable, V.Input: ~Copyable & ~Escapable, S.Output == Void, V.Output: ~Copyable & ~Escapable {}
-
-@Suite
-struct `Pair Parser Nonescapable Input` {
-
-    @Test
-    func `two values pair up from a nonescapable cursor`() throws(any Swift.Error) {
-        let bytes: [UInt8] = [3, 4]
-        var cursor = Cursor(bytes.span)
-        let pair = try TwoBytes().parse(&cursor)
-        let end = cursor.index
-        #expect(pair.first == 3)
-        #expect(pair.second == 4)
-        #expect(end == 2)
-    }
-}
-
-private struct TwoBytes: Parser.`Protocol` {
-    typealias Failure = ByteMismatch
-
-    var body: some Parser.`Protocol`<Cursor, Pair<UInt8, UInt8>, ByteMismatch> {
-        ByteValue()
-        ByteValue()
+    borrowing func parse(_ input: inout Substring) throws(Other) -> Token {
+        guard input.first == expected else { throw .expected(expected) }
+        input = input.dropFirst()
+        return Token(value: expected)
     }
 }
 
@@ -305,11 +207,15 @@ private enum ByteMismatch: Swift.Error, Equatable {
     case endOfInput
 }
 
+private struct ByteToken: ~Copyable {
+    let value: UInt8
+}
+
 private struct ByteValue: Parser.`Protocol` {
-    borrowing func parse(_ input: inout Cursor) throws(ByteMismatch) -> UInt8 {
+    borrowing func parse(_ input: inout Cursor) throws(ByteMismatch) -> ByteToken {
         guard input.index < input.span.count else { throw .endOfInput }
         let byte = input.span[input.index]
         input.index += 1
-        return byte
+        return ByteToken(value: byte)
     }
 }
