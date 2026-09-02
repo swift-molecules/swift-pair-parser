@@ -249,3 +249,67 @@ private struct TokenLiteral: Parser.`Protocol` {
         return Token(value: expected)
     }
 }
+
+@Suite
+struct `Pair Parser Builder Ranking` {
+
+    @Test
+    func `a void then value element resolves to Skip.First while the pair rules are in scope`() throws(any Swift.Error) {
+        let node = Parser.Builder<Substring>.buildPartialBlock(accumulated: Ignore("<"), next: Literal("a"))
+        requireSkipFirst(node)
+        var input: Substring = "<a"
+        #expect(try node.parse(&input) == "a")
+    }
+}
+
+private func requireSkipFirst<S: Parser.`Protocol`, V: Parser.`Protocol`, F: Swift.Error>(
+    _: borrowing Parser.Skip.First<S, V, F>
+) where S.Input == V.Input, S.Input: ~Copyable & ~Escapable, V.Input: ~Copyable & ~Escapable, S.Output == Void, V.Output: ~Copyable & ~Escapable {}
+
+@Suite
+struct `Pair Parser Nonescapable Input` {
+
+    @Test
+    func `two values pair up from a nonescapable cursor`() throws(any Swift.Error) {
+        let bytes: [UInt8] = [3, 4]
+        var cursor = Cursor(bytes.span)
+        let pair = try TwoBytes().parse(&cursor)
+        let end = cursor.index
+        #expect(pair.first == 3)
+        #expect(pair.second == 4)
+        #expect(end == 2)
+    }
+}
+
+private struct TwoBytes: Parser.`Protocol` {
+    typealias Failure = ByteMismatch
+
+    var body: some Parser.`Protocol`<Cursor, Pair<UInt8, UInt8>, ByteMismatch> {
+        ByteValue()
+        ByteValue()
+    }
+}
+
+private struct Cursor: ~Escapable {
+    var span: Span<UInt8>
+    var index: Int
+
+    @_lifetime(copy span)
+    init(_ span: Span<UInt8>) {
+        self.span = span
+        self.index = 0
+    }
+}
+
+private enum ByteMismatch: Swift.Error, Equatable {
+    case endOfInput
+}
+
+private struct ByteValue: Parser.`Protocol` {
+    borrowing func parse(_ input: inout Cursor) throws(ByteMismatch) -> UInt8 {
+        guard input.index < input.span.count else { throw .endOfInput }
+        let byte = input.span[input.index]
+        input.index += 1
+        return byte
+    }
+}
