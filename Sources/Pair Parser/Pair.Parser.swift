@@ -1,202 +1,27 @@
 public import Either
 public import Pair
 public import Parser
-
-@usableFromInline
-internal func absurd<Output>(_ never: Never) -> Output {
-    never
-}
+public import Parser_Product
 
 extension Pair::Pair
 where
-    First: Parser::Parser.`Protocol` & ~Copyable,
-    Second: Parser::Parser.`Protocol` & ~Copyable,
-    First.Input: ~Copyable & ~Escapable,
-    Second.Input: ~Copyable & ~Escapable,
+    First: Parser::Parser.`Protocol`,
+    Second: Parser::Parser.`Protocol`,
     First.Input == Second.Input,
-    First.Output: ~Copyable & Escapable,
-    Second.Output: ~Copyable & Escapable
-{
-
-    @frozen
-    public struct Parser<Failure: Swift.Error>: ~Copyable {
-        @usableFromInline
-        internal let first: First
-
-        @usableFromInline
-        internal let second: Second
-
-        @usableFromInline
-        internal let firstFailure: (First.Failure) -> Failure
-
-        @usableFromInline
-        internal let secondFailure: (Second.Failure) -> Failure
-
-        @inlinable
-        public init(
-            upstream: consuming Pair::Pair<First, Second>,
-            failure: consuming Pair::Pair<
-                (First.Failure) -> Failure,
-                (Second.Failure) -> Failure
-            >
-        ) {
-            self.first = upstream.first
-            self.second = upstream.second
-            self.firstFailure = failure.first
-            self.secondFailure = failure.second
-        }
-    }
-}
-
-extension Pair::Pair.Parser: Copyable
-where
-    First: Parser::Parser.`Protocol`<First.Input, First.Output, First.Failure> & Copyable,
-    Second: Parser::Parser.`Protocol`<Second.Input, Second.Output, Second.Failure> & Copyable,
-    Failure: Copyable
-{}
-
-extension Pair::Pair.Parser: Parser::Parser.`Protocol`
-where
-    First: ~Copyable,
-    Second: ~Copyable,
     First.Input: ~Copyable & ~Escapable,
     Second.Input: ~Copyable & ~Escapable,
     First.Output: ~Copyable & Escapable,
     Second.Output: ~Copyable & Escapable
 {
 
-    public typealias Input = First.Input
-
-    public typealias Output = Pair::Pair<First.Output, Second.Output>
-
-    public typealias Body = Never
-
     @inlinable
-    public borrowing func parse(_ input: inout Input) throws(Failure) -> Output {
-        let first: First.Output
-        do throws(First.Failure) {
-            first = try self.first.parse(&input)
-        } catch {
-            throw firstFailure(error)
-        }
-
-        let second: Second.Output
-        do throws(Second.Failure) {
-            second = try self.second.parse(&input)
-        } catch {
-            throw secondFailure(error)
-        }
-
-        return Pair::Pair<First.Output, Second.Output>(first, second)
+    public consuming func parser() -> Parser::Parser.Product<First, Second, Either<First.Failure, Second.Failure>> {
+        .init(first, second, { .left($0) }, { .right($0) })
     }
-}
-
-extension Pair::Pair
-where
-    First: Parser::Parser.`Protocol` & ~Copyable,
-    Second: Parser::Parser.`Protocol` & ~Copyable,
-    First.Input: ~Copyable & ~Escapable,
-    Second.Input: ~Copyable & ~Escapable,
-    First.Input == Second.Input,
-    First.Output: ~Copyable & Escapable,
-    Second.Output: ~Copyable & Escapable,
-    First.Failure == Never,
-    Second.Failure == Never
-{
 
     @inlinable
-    public consuming func parser() -> Pair::Pair<First, Second>.Parser<Never> {
-        .init(
-            upstream: self,
-            failure: Pair::Pair<(Never) -> Never, (Never) -> Never>(
-                absurd,
-                absurd
-            )
-        )
-    }
-}
-
-extension Pair::Pair
-where
-    First: Parser::Parser.`Protocol` & ~Copyable,
-    Second: Parser::Parser.`Protocol` & ~Copyable,
-    First.Input: ~Copyable & ~Escapable,
-    Second.Input: ~Copyable & ~Escapable,
-    First.Input == Second.Input,
-    First.Output: ~Copyable & Escapable,
-    Second.Output: ~Copyable & Escapable,
-    First.Failure == Never
-{
-
-    @_disfavoredOverload
-    @inlinable
-    public consuming func parser() -> Pair::Pair<First, Second>.Parser<Second.Failure> {
-        .init(
-            upstream: self,
-            failure: Pair::Pair<
-                (Never) -> Second.Failure,
-                (Second.Failure) -> Second.Failure
-            >(
-                { $0 },
-                { $0 }
-            )
-        )
-    }
-}
-
-extension Pair::Pair
-where
-    First: Parser::Parser.`Protocol` & ~Copyable,
-    Second: Parser::Parser.`Protocol` & ~Copyable,
-    First.Input: ~Copyable & ~Escapable,
-    Second.Input: ~Copyable & ~Escapable,
-    First.Input == Second.Input,
-    First.Output: ~Copyable & Escapable,
-    Second.Output: ~Copyable & Escapable,
-    Second.Failure == Never
-{
-
-    @_disfavoredOverload
-    @inlinable
-    public consuming func parser() -> Pair::Pair<First, Second>.Parser<First.Failure> {
-        .init(
-            upstream: self,
-            failure: Pair::Pair<
-                (First.Failure) -> First.Failure,
-                (Never) -> First.Failure
-            >(
-                { $0 },
-                { $0 }
-            )
-        )
-    }
-}
-
-extension Pair::Pair
-where
-    First: Parser::Parser.`Protocol` & ~Copyable,
-    Second: Parser::Parser.`Protocol` & ~Copyable,
-    First.Input: ~Copyable & ~Escapable,
-    Second.Input: ~Copyable & ~Escapable,
-    First.Input == Second.Input,
-    First.Output: ~Copyable & Escapable,
-    Second.Output: ~Copyable & Escapable
-{
-
-    @_disfavoredOverload
-    @inlinable
-    public consuming func parser() -> Pair::Pair<First, Second>.Parser<
-        Either<First.Failure, Second.Failure>
-    > {
-        .init(
-            upstream: self,
-            failure: Pair::Pair<
-                (First.Failure) -> Either<First.Failure, Second.Failure>,
-                (Second.Failure) -> Either<First.Failure, Second.Failure>
-            >(
-                { .left($0) },
-                { .right($0) }
-            )
-        )
+    public consuming func parser() -> Parser::Parser.Product<First, Second, First.Failure>
+    where First.Failure == Second.Failure {
+        .init(first, second, { $0 }, { $0 })
     }
 }
