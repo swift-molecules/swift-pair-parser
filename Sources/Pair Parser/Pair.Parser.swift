@@ -11,13 +11,13 @@ extension Pair::Pair
 where
     First: Parser::Parser.`Protocol` & ~Copyable,
     Second: Parser::Parser.`Protocol` & ~Copyable,
+    First.Input: ~Copyable & ~Escapable,
+    Second.Input: ~Copyable & ~Escapable,
     First.Input == Second.Input,
-    First.Output: Escapable,
-    Second.Output: Escapable
+    First.Output: ~Copyable & Escapable,
+    Second.Output: ~Copyable & Escapable
 {
 
-    // The node admits noncopyable upstream parsers and conditionally recovers
-    // `Copyable` below when both upstream parsers and the failure are copyable.
     @frozen
     public struct Parser<Failure: Swift.Error>: ~Copyable {
         @usableFromInline
@@ -50,13 +50,20 @@ where
 
 extension Pair::Pair.Parser: Copyable
 where
-    First: Copyable,
-    Second: Copyable,
+    First: Parser::Parser.`Protocol`<First.Input, First.Output, First.Failure> & Copyable,
+    Second: Parser::Parser.`Protocol`<Second.Input, Second.Output, Second.Failure> & Copyable,
     Failure: Copyable
 {}
 
 extension Pair::Pair.Parser: Parser::Parser.`Protocol`
-where First: ~Copyable, Second: ~Copyable {
+where
+    First: ~Copyable,
+    Second: ~Copyable,
+    First.Input: ~Copyable & ~Escapable,
+    Second.Input: ~Copyable & ~Escapable,
+    First.Output: ~Copyable & Escapable,
+    Second.Output: ~Copyable & Escapable
+{
 
     public typealias Input = First.Input
 
@@ -88,9 +95,11 @@ extension Pair::Pair
 where
     First: Parser::Parser.`Protocol` & ~Copyable,
     Second: Parser::Parser.`Protocol` & ~Copyable,
+    First.Input: ~Copyable & ~Escapable,
+    Second.Input: ~Copyable & ~Escapable,
     First.Input == Second.Input,
-    First.Output: Escapable,
-    Second.Output: Escapable,
+    First.Output: ~Copyable & Escapable,
+    Second.Output: ~Copyable & Escapable,
     First.Failure == Never,
     Second.Failure == Never
 {
@@ -111,9 +120,11 @@ extension Pair::Pair
 where
     First: Parser::Parser.`Protocol` & ~Copyable,
     Second: Parser::Parser.`Protocol` & ~Copyable,
+    First.Input: ~Copyable & ~Escapable,
+    Second.Input: ~Copyable & ~Escapable,
     First.Input == Second.Input,
-    First.Output: Escapable,
-    Second.Output: Escapable,
+    First.Output: ~Copyable & Escapable,
+    Second.Output: ~Copyable & Escapable,
     First.Failure == Never
 {
 
@@ -137,9 +148,11 @@ extension Pair::Pair
 where
     First: Parser::Parser.`Protocol` & ~Copyable,
     Second: Parser::Parser.`Protocol` & ~Copyable,
+    First.Input: ~Copyable & ~Escapable,
+    Second.Input: ~Copyable & ~Escapable,
     First.Input == Second.Input,
-    First.Output: Escapable,
-    Second.Output: Escapable,
+    First.Output: ~Copyable & Escapable,
+    Second.Output: ~Copyable & Escapable,
     Second.Failure == Never
 {
 
@@ -163,9 +176,11 @@ extension Pair::Pair
 where
     First: Parser::Parser.`Protocol` & ~Copyable,
     Second: Parser::Parser.`Protocol` & ~Copyable,
+    First.Input: ~Copyable & ~Escapable,
+    Second.Input: ~Copyable & ~Escapable,
     First.Input == Second.Input,
-    First.Output: Escapable,
-    Second.Output: Escapable
+    First.Output: ~Copyable & Escapable,
+    Second.Output: ~Copyable & Escapable
 {
 
     @_disfavoredOverload

@@ -16,8 +16,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable,
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable,
         First.Failure == Never,
         Second.Failure == Never
     {
@@ -36,8 +36,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable,
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable,
         First.Failure == Never
     {
         Pair::Pair(first, second).parser()
@@ -55,8 +55,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable,
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable,
         Second.Failure == Never
     {
         Pair::Pair(first, second).parser()
@@ -76,8 +76,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable
     {
         Pair::Pair(first, second).parser()
     }
@@ -94,8 +94,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable,
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable,
         First.Failure == Never,
         Second.Failure == Never
     {
@@ -114,8 +114,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable,
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable,
         First.Failure == Never
     {
         Pair::Pair(first, second).parser()
@@ -133,8 +133,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable,
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable,
         Second.Failure == Never
     {
         Pair::Pair(first, second).parser()
@@ -154,8 +154,8 @@ extension Parser::Parser.Builder {
     where
         First.Input == Input,
         Second.Input == Input,
-        First.Output: Escapable,
-        Second.Output: Escapable
+        First.Output: ~Copyable & Escapable,
+        Second.Output: ~Copyable & Escapable
     {
         Pair::Pair(first, second).parser()
     }
