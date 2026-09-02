@@ -2,11 +2,10 @@
 
 Focused Parser integration for the Pair domain.
 
-`Pair Parser` makes a pair of parsers a sequential parser. It returns both
-outputs as a nominal `Pair` through `Pair.Parser`.
+`Pair Parser` makes a pair of parsers a sequential parser. `Pair.Parser`
+returns both outputs as a nominal `Pair`, and `Pair(a, b).parser()` lifts an
+existing pair.
 
-Failure is normalized exactly: two fallible parsers use `Either`, while a
-`Never` component is eliminated rather than retained in the public failure
-type. The focused Parser builder integration sequences exactly two parsers.
-N-ary product sequencing belongs to `swift-product-parser` and remains
-compiler-gated until Swift parameter packs support noncopyable elements.
+The builder rules for two value-producing elements live here: their failures
+join as `Either`, or collapse to the shared type when both children throw the
+same error. Longer sequences nest `Pair` to the left.

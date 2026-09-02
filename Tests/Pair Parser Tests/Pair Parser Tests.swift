@@ -2,7 +2,6 @@ import Either
 import Pair
 import Pair_Parser
 import Parser
-import Parser_Product
 import Testing
 
 @Suite
@@ -11,7 +10,7 @@ struct `Pair Parser Tests` {
     @Test
     func `parses sequentially into a nominal Pair`() throws(any Swift.Error) {
         var input: Substring = "abc"
-        let parser: Parser.Product<Literal, OtherLiteral, Either<LiteralError, OtherError>> =
+        let parser: Pair::Pair<Literal, OtherLiteral>.Parser<Either<LiteralError, OtherError>> =
             Pair::Pair(Literal("a"), OtherLiteral("b")).parser()
 
         let output = try parser.parse(&input)
@@ -24,7 +23,7 @@ struct `Pair Parser Tests` {
     @Test
     func `attributes first failure to Either left`() {
         var input: Substring = "xbc"
-        let parser: Parser.Product<Literal, OtherLiteral, Either<LiteralError, OtherError>> =
+        let parser: Pair::Pair<Literal, OtherLiteral>.Parser<Either<LiteralError, OtherError>> =
             Pair::Pair(Literal("a"), OtherLiteral("b")).parser()
 
         #expect(throws: Either<LiteralError, OtherError>.left(.expected("a"))) {
@@ -35,7 +34,7 @@ struct `Pair Parser Tests` {
     @Test
     func `attributes second failure to Either right`() {
         var input: Substring = "axc"
-        let parser: Parser.Product<Literal, OtherLiteral, Either<LiteralError, OtherError>> =
+        let parser: Pair::Pair<Literal, OtherLiteral>.Parser<Either<LiteralError, OtherError>> =
             Pair::Pair(Literal("a"), OtherLiteral("b")).parser()
 
         #expect(throws: Either<LiteralError, OtherError>.right(.expected("b"))) {
@@ -47,7 +46,7 @@ struct `Pair Parser Tests` {
     @Test
     func `equally typed failures collapse`() throws(any Swift.Error) {
         var input: Substring = "abc"
-        let parser: Parser.Product<Literal, Literal, LiteralError> =
+        let parser: Pair::Pair<Literal, Literal>.Parser<LiteralError> =
             Pair::Pair(Literal("a"), Literal("b")).parser()
 
         let output = try parser.parse(&input)
@@ -60,7 +59,7 @@ struct `Pair Parser Tests` {
     @Test
     func `noncopyable parsers produce move-only nominal Pair output`() throws(any Swift.Error) {
         var input: Substring = "abc"
-        let parser: Parser.Product<TokenLiteral, TokenLiteral, LiteralError> = Pair::Pair(
+        let parser: Pair::Pair<TokenLiteral, TokenLiteral>.Parser<LiteralError> = Pair::Pair(
             TokenLiteral(expected: "a"),
             TokenLiteral(expected: "b")
         ).parser()
